@@ -3,29 +3,45 @@ document.addEventListener("keydown", keyPush)
 
 //canvas
 const canvas = document.querySelector("canvas");
+const title = document.querySelector("h1");
 const ctx = canvas.getContext("2d");
 
-//player
-const snakeSize = 50;
-let snakeSpeed = snakeSize;
+//game
+let gameIsRunning = true;
 
+const fps = 10;
+const tileSize = 50;
+const tileCountX = canvas.width / tileSize;
+const tileCountY = canvas.height / tileSize;
+
+let score = 0;
+
+//player
+let snakeSpeed = tileSize;
 let snakePosX = 0;
 let snakePosY = canvas.height / 2;
 
-let velocityX = 0;
+let velocityX = 1;
 let velocityY = 0;
 
-const tileCountX = canvas.width / snakeSize;
-const tileCountY = canvas.height / snakeSize;
+let tail = [];
+let snakeLength = 2;
+
+//food
+let foodPosX = 0;
+let foodPosY = 0;
 
 
 //loop
 function gameLoop() {
-    drawStuff();
-    moveStuff();
-    setTimeout(gameLoop, 1000 / 15);
+    if (gameIsRunning) {
+        drawStuff();
+        moveStuff();
+        setTimeout(gameLoop, 1000 / fps);
+    }
 }
 
+resetFood();
 gameLoop();
 
 /**
@@ -35,17 +51,39 @@ function moveStuff() {
     snakePosX += snakeSpeed * velocityX;
     snakePosY += snakeSpeed * velocityY;
 
-    if (snakePosX > (canvas.width - snakeSize)) {
+    //wall collision
+    if (snakePosX > (canvas.width - tileSize)) {
         snakePosX = 0;
     }
     if (snakePosX < 0) {
         snakePosX = canvas.width;
     }
-    if (snakePosY > canvas.height) {
+    if (snakePosY > canvas.height - tileSize) {
         snakePosY = 0;
     }
     if (snakePosY < 0) {
         snakePosY = canvas.height;
+    }
+
+    //GAME OVER (crash into myself)
+    tail.forEach(snakePart => {
+        if (snakePosX === snakePart.x && snakePosY === snakePart.y) {
+            gameOver();
+        }
+    });
+
+    //tail 
+    tail.push({x: snakePosX, y: snakePosY});
+
+    //forget earliest parts of snake
+    tail = tail.slice(-1 * snakeLength);
+
+
+    //food collision
+    if(snakePosX === foodPosX && snakePosY === foodPosY) {
+        title.textContent = ++score;
+        snakeLength++;
+        resetFood()
     }
 }
 
@@ -58,11 +96,20 @@ function drawStuff() {
     rectangle("#ffbf00", 0, 0, canvas.width, canvas.height);
 
     //grid
-    drawGrid()
+    drawGrid();
+
+    //food
+    rectangle("#00bfff", foodPosX, foodPosY, tileSize, tileSize);
+
+    //tail
+    tail.forEach(snakePart =>
+        rectangle("#555", snakePart.x, snakePart.y, tileSize, tileSize)
+    )
 
     //snake
-    rectangle("black", snakePosX, snakePosY, snakeSize, snakeSize);
+    rectangle("black", snakePosX, snakePosY, tileSize, tileSize);
 }
+
 
 //draw rectangle
 function rectangle(color, x, y, width, height) {
@@ -70,11 +117,47 @@ function rectangle(color, x, y, width, height) {
     ctx.fillRect(x, y, width, height);
 }
 
+
+// randomize food position
+function resetFood() {
+    // GAME OVER (nowhere to go)
+    if (snakeLength === tileCountX * tileCountY) {
+        gameOver();
+    }
+
+    foodPosX = Math.floor(Math.random() * tileCountX) * tileSize;
+    foodPosY = Math.floor(Math.random() * tileCountY) * tileSize;
+
+    // dont spawn food on snakes head
+    if (foodPosX === snakePosX && foodPosY === snakePosY) {
+        resetFood();
+    }
+
+    // dont spawn food on any snake part
+    if (
+        tail.some(
+            (snakePart) => snakePart.x === foodPosX && snakePart.y === foodPosY
+        )
+    ) {
+        resetFood();
+    }
+}
+
+
+// GAME OVER
+// KEYBOARD restarts game
+function gameOver() {
+    title.innerHTML = `☠️ <strong> ${score} </strong> ☠️`;
+    gameIsRunning = false;
+}
+
+
+
 /**
  * *KeyBoaard
  */
 function keyPush(event) {
-    switch(event.key) {
+    switch (event.key) {
         case "ArrowLeft":
             if (velocityX !== 1) {
                 velocityX = -1;
@@ -82,7 +165,7 @@ function keyPush(event) {
             }
             break;
         case "ArrowUp":
-            if (velocityX !== 0) { // Opraveno z velocityY !== 1
+            if (velocityY !== 1) {
                 velocityX = 0;
                 velocityY = -1;
             }
@@ -94,10 +177,14 @@ function keyPush(event) {
             }
             break;
         case "ArrowDown":
-            if (velocityX !== 0) { // Opraveno z velocityY !== 1
+            if (velocityY !== -1) {
                 velocityX = 0;
                 velocityY = 1;
             }
+            break;
+        default:
+            // restart game
+            if (!gameIsRunning) location.reload();
             break;
     }
 }
@@ -109,11 +196,12 @@ function drawGrid() {
         for (let j = 0; j < tileCountY; j++) {
             rectangle(
                 "#fff", 
-                snakeSize * i, 
-                snakeSize * j, 
-                snakeSize - 1, 
-                snakeSize - 1
+                tileSize * i, 
+                tileSize * j, 
+                tileSize - 1, 
+                tileSize - 1
             );
         }
     }
 }
+
