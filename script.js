@@ -7,7 +7,7 @@ const ctx = canvas.getContext("2d");
 
 //player
 const snakeSize = 50;
-let snakeSpeed = 50;
+let snakeSpeed = snakeSize;
 
 let snakePosX = 0;
 let snakePosY = canvas.height / 2;
@@ -35,16 +35,16 @@ function moveStuff() {
     snakePosX += snakeSpeed * velocityX;
     snakePosY += snakeSpeed * velocityY;
 
-    if (snakePosX > canvas.width) {
+    if (snakePosX > (canvas.width - snakeSize)) {
         snakePosX = 0;
     }
-    if (snakePosX < -snakeSize) {
+    if (snakePosX < 0) {
         snakePosX = canvas.width;
     }
     if (snakePosY > canvas.height) {
         snakePosY = 0;
     }
-    if (snakePosY < -snakeSize) {
+    if (snakePosY < 0) {
         snakePosY = canvas.height;
     }
 }
